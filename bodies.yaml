@@ -1,0 +1,22 @@
+bodies:
+  - Voyager_2:
+     color: red
+     decimate: 60
+  - Voyager_1:
+     color: red
+     decimate: 60
+  - Earth:
+     color: blue
+     decimate: 100
+  - Jupiter:
+     color: peru
+     decimate: 60
+  - Saturn:
+     color: gold
+     decimate: 60
+  - Uranus:
+     color: darkturquoise
+     decimate: 80
+  - Neptune:
+     color: dodgerblue
+     decimate: 80
