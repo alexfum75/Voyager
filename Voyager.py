@@ -82,13 +82,13 @@ if __name__ == "__main__":
 
     angles = []
     angles.append((20,90))
-    #angles.append((90, 0))
-    #angles.append((45, 45))
-    #angles.append((20, 160))
-    #angles.append((-5, 20))
-    #angles.append((-5, -130))
-    #angles.append((20, -90))
-    #angles.append((10, -90))
+    angles.append((90, 0))
+    angles.append((45, 45))
+    angles.append((20, 160))
+    angles.append((-5, 20))
+    angles.append((-5, -130))
+    angles.append((20, -90))
+    angles.append((10, -90))
 
     print(f"Plotting position")
     for angle in angles:
@@ -169,5 +169,5 @@ if __name__ == "__main__":
 
     plt.legend(legend_list,  loc = 'upper right', fontsize = 20)
     plt.grid(True)
-    plt.savefig(f'Voyager probes velocity.png')
+    plt.savefig(f'Voyager_probes_velocity.png')
     plt.show()
