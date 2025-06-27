@@ -2,9 +2,11 @@ bodies:
   - Voyager_2:
      color: red
      decimate: 60
+     probe: True
   - Voyager_1:
      color: red
      decimate: 60
+     probe: True
   - Earth:
      color: blue
      decimate: 100

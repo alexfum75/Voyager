@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 from scipy import signal
-from utility import readConfig, findComet
+from utility import readConfig, findProbe
 
 # use NASA API https://ssd.jpl.nasa.gov/horizons/app.html
 # color https://matplotlib.org/stable/gallery/color/named_colors.html
@@ -17,6 +17,8 @@ class Horizon:
         self.v_x = []
         self.v_y = []
         self.v_z = []
+        self.const_conversion_ua_km = 1.496e+8 # from UA in km
+        self.const_conversion_ua_km_s = 1731.46# from AU/day in km/s
 
     def _parse_pos_line(self, line):
         sx, sy, sz = line[4:26], line[30:52], line[56:78]
@@ -36,14 +38,7 @@ class Horizon:
                     break
                 if "A.D." in line:
                     date = line[25:36]
-                    if date.startswith("1999-Dec"):
-                        break
-                    dt = datetime.datetime.strptime(date, '%Y-%b-%d')
-                    if state_vector == 'position':
-                        new_format_date = str(dt.year) + str(dt.month).zfill(2) + str(dt.day).zfill(2)
-                        self.dates.append(int(new_format_date))
-                    else:
-                        self.dates.append(date)
+                    self.dates.append(date)
                 elif line.startswith(" X =") and (state_vector == 'position'):
                     sx, sy, sz = self._parse_pos_line(line)
                     self.x.append(sx)
@@ -51,9 +46,9 @@ class Horizon:
                     self.z.append(sz)
                 elif line.startswith(" VX=")and (state_vector == 'velocity'):
                     svx, svy, svz = self._parse_velocity_line(line)
-                    self.v_x.append(svx * 1731.46)
-                    self.v_y.append(svy * 1731.46)
-                    self.v_z.append(svz * 1731.46) # from  AU/day in km/s
+                    self.v_x.append(svx * self.const_conversion_ua_km_s)
+                    self.v_y.append(svy * self.const_conversion_ua_km_s)
+                    self.v_z.append(svz * self.const_conversion_ua_km_s) # from  AU/day in km/s
 
     def get_position(self):
         return self.dates, self.x, self.y, self.z
@@ -69,7 +64,7 @@ class Horizon:
 def plotTrajectory (corpse):
     angles = [(20, 90), (90, 0), (45, 45), (20, 160), (-5, 20), (-5, -130), (20, -90), (10, -90)]
 
-    print(f"Plotting position")
+    print(f"Plotting trajectory")
     for angle in angles:
         fig = plt.figure(figsize=(25,16))
         ax = fig.add_subplot(projection='3d')
@@ -126,24 +121,31 @@ def plotTrajectory (corpse):
 def plotVelocity (cel_bodies):
     print(f"Plotting velocity")
     legend_list = []
-    body, body_lower_name = findComet(cel_bodies)
+    bodies = findProbe(cel_bodies)
 
+    min_y = 200
+    max_y = 0
     fig = plt.figure(figsize=(20, 16))
+    plt.title(f'Velocity of Voyager probes', fontsize=40)
+    for body, body_lower_name in bodies.items():
+        print(f"Working on body: {body}")
+        horizon = Horizon()
+        horizon.get_ephemeris(f"./Horizons/{body_lower_name}.txt", 'velocity')
+        vel_body = horizon.get_module_velocity()
+        plt.plot(vel_body[0][0:8140], vel_body[1][0:8140])
+        plt.xlabel('Date', fontsize = 20)
+        plt.ylabel('Velocity (km/s)', fontsize=20)
+        tick_label = ['x' if (i % 400) != 0 else str(val) for i, val in enumerate(vel_body[0][0:8137])]
+        plt.xticks(tick_label, tick_label, rotation=45, fontsize='20')
+        if min(vel_body[1]) < min_y:
+            min_y = min(vel_body[1])
+        if max(vel_body[1]) > max_y:
+            max_y = max(vel_body[1])
+        legend_list.append(f"{body.replace('_', '')}")
 
-    print(f"Working on body: {body}")
-
-    horizon = Horizon()
-    horizon.get_ephemeris(f"./Horizons/{body_lower_name}.txt", 'velocity')
-    vel_body = horizon.get_velocity()
-
-    plt.title(f'Velocity of {body}', fontsize = 40)
-    plt.plot(vel_body[0][0:8137], vel_body[1][0:8137])
-    plt.xlabel('Date', fontsize = 20)
-    plt.ylabel('Velocity (km/s)', fontsize=20)
-    tick_label = ['x' if (i % 400) != 0 else str(val) for i, val in enumerate(vel_body[0][0:8137])]
-    plt.xticks(tick_label, tick_label, rotation=45, fontsize='20')
-
-    plt.legend(legend_list,  loc = 'upper right', fontsize = 20)
+    listOf_Yticks = np.arange(int(min_y), int(max_y), step = 2)
+    plt.yticks(listOf_Yticks, listOf_Yticks, fontsize='20')
+    plt.legend(legend_list,  loc = 'upper center', fontsize = 20)
     plt.grid(True)
     plt.savefig(f'Voyager_probes_velocity.png')
     plt.show()
@@ -155,5 +157,5 @@ if __name__ == "__main__":
         print ("Bodies not found.")
         sys.exit(-1)
 
-    plotTrajectory(bodies)
+    #plotTrajectory(bodies)
     plotVelocity (bodies)
