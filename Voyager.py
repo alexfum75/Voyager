@@ -6,6 +6,7 @@ import numpy as np
 import yaml
 import sys
 from scipy import signal
+from utility import readConfig, findComet
 
 # use NASA API https://ssd.jpl.nasa.gov/horizons/app.html
 # color https://matplotlib.org/stable/gallery/color/named_colors.html
@@ -66,29 +67,9 @@ class Horizon:
         v_square = np.sqrt (np.square(self.v_x) + np.square(self.v_y) + np.square(self.v_z))
         return self.dates, v_square
 
-def config(filename):
-    bodies = None
-    with open(filename) as stream:
-        try:
-            bodies = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
-    return bodies
 
-if __name__ == "__main__":
-    bodies = config("bodies.yaml")
-    if bodies is None:
-        sys.exit("Bodies not found.")
-
-    angles = []
-    angles.append((20,90))
-    angles.append((90, 0))
-    angles.append((45, 45))
-    angles.append((20, 160))
-    angles.append((-5, 20))
-    angles.append((-5, -130))
-    angles.append((20, -90))
-    angles.append((10, -90))
+def plotTrajectory (corpse):
+    angles = [(20, 90), (90, 0), (45, 45), (20, 160), (-5, 20), (-5, -130), (20, -90), (10, -90)]
 
     print(f"Plotting position")
     for angle in angles:
@@ -97,9 +78,8 @@ if __name__ == "__main__":
         ax.view_init(angle[0], angle[1])
 
         legend_list = []
-        color_list = []
-        for body_index in range (0, len(bodies['bodies'])):
-            for body, param in bodies['bodies'][body_index].items():
+        for body_index in range (0, len(corpse['bodies'])):
+            for body, param in corpse['bodies'][body_index].items():
                 print(f"Working on body: {body}")
                 legend_list.append(body)
                 body_lower_name = body.lower()
@@ -144,30 +124,38 @@ if __name__ == "__main__":
         plt.savefig(f'voyager_trajectory_{angle[0]}_{angle[1]}.png')
         plt.show()
 
+
+def plotVelocity (cel_bodies):
     print(f"Plotting velocity")
     legend_list = []
+    body, body_lower_name = findComet(cel_bodies)
+
     fig = plt.figure(figsize=(20, 16))
-    for body_index in range (0, len(bodies['bodies'])):
-        for body, param in bodies['bodies'][body_index].items():
-            legend_list.append(body)
-            body_lower_name = body.lower()
-            if body_lower_name != 'voyager_1' and body_lower_name != 'voyager_2':
-                continue
-            print(f"Working on body: {body}")
-            pos_body_dec = []
 
-            horizon = Horizon()
-            horizon.get_ephemeris(f"./Horizons/{body_lower_name}.txt", 'velocity')
-            vel_body = horizon.get_velocity()
+    print(f"Working on body: {body}")
 
-            plt.title(f'Velocity of {body}', fontsize = 40)
-            plt.plot(vel_body[0][0:8137], vel_body[1][0:8137])
-            plt.xlabel('Date', fontsize = 20)
-            plt.ylabel('Velocity (km/s)', fontsize=20)
-            tick_label = ['x' if (i % 400) != 0 else str(val) for i, val in enumerate(vel_body[0][0:8137])]
-            plt.xticks(tick_label, tick_label, rotation=45, fontsize='20')
+    horizon = Horizon()
+    horizon.get_ephemeris(f"./Horizons/{body_lower_name}.txt", 'velocity')
+    vel_body = horizon.get_velocity()
+
+    plt.title(f'Velocity of {body}', fontsize = 40)
+    plt.plot(vel_body[0][0:8137], vel_body[1][0:8137])
+    plt.xlabel('Date', fontsize = 20)
+    plt.ylabel('Velocity (km/s)', fontsize=20)
+    tick_label = ['x' if (i % 400) != 0 else str(val) for i, val in enumerate(vel_body[0][0:8137])]
+    plt.xticks(tick_label, tick_label, rotation=45, fontsize='20')
 
     plt.legend(legend_list,  loc = 'upper right', fontsize = 20)
     plt.grid(True)
     plt.savefig(f'Voyager_probes_velocity.png')
     plt.show()
+
+
+if __name__ == "__main__":
+    bodies = readConfig("bodies.yaml")
+    if bodies is None:
+        print ("Bodies not found.")
+        sys.exit(-1)
+
+    plotTrajectory(bodies)
+    plotVelocity (bodies)
