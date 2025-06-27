@@ -1,9 +1,7 @@
 import datetime
-import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
 import sys
 from scipy import signal
 from utility import readConfig, findComet

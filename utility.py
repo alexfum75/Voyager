@@ -1,3 +1,5 @@
+import yaml
+
 def findComet (cel_bodies):
     body = ''
     body_lower_name = ''
